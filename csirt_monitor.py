@@ -48,15 +48,32 @@ def extractData(s):
             ret["subject"].append({"comment": subj.group(1), "data": i})
     return ret
 
+alert_file = "last_alert.txt"
 base_url = "https://www.csirt.gob.cl"
 url = base_url+"/alertas/"
 user_agent = 'Mozilla/5.0 (X11; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0'
 h = html2text.HTML2Text()
 session = HTMLSession()
 
+try:
+    f = open(alert_file,"r")
+    last = f.readline()         # Ultima alerta parseada anteriormente
+    f.close()
+except:
+    last = None
+first = ""                  # Primera alerta parseada ahora
+
 o = session.get(url, headers = {'User-Agent': user_agent})
 for c in o.html.find(".card-body"):
     for l in c.links:
+        if first == "":
+            first = l
+
+        if last in l:
+            f = open(alert_file,"w")
+            f.write(first)
+            f.close()
+            exit()
         x = re.search("https?://(www.)?csirt.gob.cl/alertas/([a-z0-9-]+)", base_url+l)
         if x is not None:
             r = session.get(x.group(), headers = {'User-agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:70.0) Gecko/20100101 Firefox/70.0'})
@@ -71,3 +88,7 @@ for c in o.html.find(".card-body"):
                     ret[key].extend(output[key])
             print(ret)
         print("\n\n")
+
+f = open(alert_file,"w")
+f.write(first)
+f.close()
